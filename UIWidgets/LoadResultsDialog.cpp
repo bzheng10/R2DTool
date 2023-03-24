@@ -174,9 +174,8 @@ void LoadResultsDialog::handleLoadResults(void)
     workflowWidget->postprocessResults(resultsPath,QString(),QString());
 #else
     workflowWidget->processResults(resultsPath);
-#endif
-
     statusDialog->appendText("Done loading the results");
+#endif
 }
 
 
