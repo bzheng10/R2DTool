@@ -159,6 +159,11 @@ bool GISAssetInputWidget::outputToJSON(QJsonObject &rvObject)
     auto assetDirName = dirInfo.dirName();
     auto pathToFile = assetDirName + QDir::separator() + assetFileName;
 
+#ifdef OpenSRA
+    if (assetFileName.contains(".shp") || assetFileName.contains(".gpkg"))
+        pathToFile = assetFilePath + QDir::separator() + assetFileName;
+#endif
+
     //    auto pathToFile = assetFilePath + QDir::separator() + assetFileName;
 
     //    auto pathToFile = assetFileName;
