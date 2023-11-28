@@ -179,6 +179,8 @@ QStackedWidget* ShakeMapWidget::getStackedWidget(void)
     shakeMapText2->setWordWrap(true);
     QLabel* shakeMapText3 = new QLabel("The list of loaded ShakeMaps will appear on the right.");
     shakeMapText3->setWordWrap(true);
+    QLabel* shakeMapText4 = new QLabel("To remove a ShakeMap from the list, right click on the item and select \"Remove\".");
+    shakeMapText4->setWordWrap(true);
 
     directoryInputWidget = new QWidget();
     auto inputLayout = new QGridLayout(directoryInputWidget);
@@ -223,8 +225,9 @@ QStackedWidget* ShakeMapWidget::getStackedWidget(void)
     inputLayout->addWidget(shakeMapText1,2,0,1,3);
     inputLayout->addWidget(shakeMapText2,3,0,1,3);
     inputLayout->addWidget(shakeMapText3,4,0,1,3);
-    inputLayout->addLayout(IMLayout,5,0,1,3);
-    inputLayout->addItem(vspacer3,6,0);
+    inputLayout->addWidget(shakeMapText4,5,0,1,3);
+    inputLayout->addLayout(IMLayout,6,0,1,3);
+    inputLayout->addItem(vspacer3,7,0);
 
     shakeMapStackedWidget->addWidget(directoryInputWidget);
     shakeMapStackedWidget->addWidget(progressBarWidget);
@@ -518,7 +521,8 @@ int ShakeMapWidget::loadDataFromDirectory(const QString& dir)
         QApplication::processEvents();
     }
 
-    qGsVisWidget->createLayerGroup(layerGroup,eventName);
+    if (layerGroup.length() > 1)
+        qGsVisWidget->createLayerGroup(layerGroup,eventName);
 
     progressLabel->setVisible(false);
 
@@ -860,7 +864,8 @@ bool ShakeMapWidget::outputToJSON(QJsonObject &jsonObject)
 
     QJsonArray eventsArray;
 
-    for(auto&& it : eventsVec)
+//    for(auto&& it : eventsVec)
+    for(auto&& it : this->listWidget->getListOfItems())
         eventsArray.append(it);
 
     jsonObject["Events"] = eventsArray;
@@ -1045,6 +1050,7 @@ bool ShakeMapWidget::inputFromJSON(QJsonObject &jsonObject)
 bool ShakeMapWidget::copyFiles(QString &destDir)
 {
 
+#ifndef OpenSRA
 
     QFileInfo inputDirInfo(pathToShakeMapDirectory);
 
@@ -1079,23 +1085,6 @@ bool ShakeMapWidget::copyFiles(QString &destDir)
 
     motionDir = destPath + QDir::separator();
     pathToEventFile = motionDir + "EventGrid.csv";
-
-#ifdef OpenSRA
-    // only copy over events in shakemap list
-    for(auto&& event : this->shakeMapList)
-    {
-        auto currShakeMapInputPath = inputDir + QDir::separator() + event;
-        auto currShakeMapDestPath = destPath + QDir::separator() + event;
-        auto res = SCUtils::recursiveCopy(currShakeMapInputPath, currShakeMapDestPath);
-        if(!res)
-        {
-            QString msg = "Error copying files over to the directory for event " + event;
-            errorMessage(msg);
-
-            return res;
-        }
-    }
-#else
     auto res = SCUtils::recursiveCopy(inputDir, destPath);
 
     if(!res)
@@ -1105,9 +1094,6 @@ bool ShakeMapWidget::copyFiles(QString &destDir)
 
         return res;
     }
-#endif
-
-#ifndef OpenSRA
 
     auto currentItem = listWidget->getCurrentItem();
 

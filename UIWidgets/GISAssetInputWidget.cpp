@@ -151,6 +151,9 @@ bool GISAssetInputWidget::outputToJSON(QJsonObject &rvObject)
         return false;
     }
 
+#ifdef OpenSRA
+    rvObject.insert("SiteDataFile", appData["pathToSource"].toString());
+#else
     auto assetFileName = appData["assetGISFile"].toString();
 
     auto assetFilePath = appData["pathToSource"].toString();
@@ -169,6 +172,7 @@ bool GISAssetInputWidget::outputToJSON(QJsonObject &rvObject)
     //    auto pathToFile = assetFileName;
 
     rvObject.insert("SiteDataFile", pathToFile);
+#endif
 
     if(!appData.contains("CRS"))
     {
