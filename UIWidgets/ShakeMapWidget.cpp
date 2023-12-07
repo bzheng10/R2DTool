@@ -290,6 +290,11 @@ int ShakeMapWidget::loadShakeMapData(void)
 
     auto inputDir = inputDirInfo.absoluteFilePath();
 
+#ifdef OpenSRA
+    // clear select items before loading
+    this->selectClear();
+#endif
+
     // First load files from the current directory
     this->loadDataFromDirectory(inputDir);
 
@@ -383,6 +388,11 @@ int ShakeMapWidget::loadDataFromDirectory(const QString& dir)
     progressBar->setValue(0);
 
     QVector<QgsMapLayer*> layerGroup;
+
+//#ifdef OpenSRA
+//    // clear list before loading from directory
+//    this->selectClear();
+//#endif
 
     int count = 0;
     foreach(QString filename, inputFiles)
@@ -843,7 +853,11 @@ void ShakeMapWidget::chooseShakeMapDirectoryDialog(void)
     if(!shakeMapDirectoryLineEdit->text().isEmpty())
         oldPath = shakeMapDirectoryLineEdit->text();
     else
+#ifdef OpenSRA
+        oldPath = OpenSRAPreferences::getInstance()->getLocalWorkDir();
+#else
         oldPath = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+#endif
 
     pathToShakeMapDirectory = dialog.getExistingDirectory(this, tr("Folder with ShakeMap files"), oldPath) + QDir::separator();
 
@@ -1004,7 +1018,6 @@ bool ShakeMapWidget::inputFromJSON(QJsonObject &jsonObject)
 
     pathToShakeMapDirectory = thisObject.value("Directory").toString();
 
-
     QFileInfo inputDirInfo(pathToShakeMapDirectory);
 
     if(!inputDirInfo.exists())
@@ -1027,6 +1040,10 @@ bool ShakeMapWidget::inputFromJSON(QJsonObject &jsonObject)
 
     pathToShakeMapDirectory = inputDirInfo.absoluteFilePath();
     shakeMapDirectoryLineEdit->setText(pathToShakeMapDirectory);
+
+    // if shakeMapList is not empty during input, clear it
+    if (!shakeMapList.empty())
+        shakeMapList.clear();
 
     auto eventsArray = thisObject.value("Events").toArray().toVariantList();
 
@@ -1263,5 +1280,14 @@ void ShakeMapWidget::clear()
     eventsVec.clear();
     motionDir.clear();
     pathToEventFile.clear();
+    shakeMapList.clear();
+}
+
+void ShakeMapWidget::selectClear()
+{
+    listWidget->clear();
+    qDeleteAll(shakeMapContainer);
+    shakeMapContainer.clear();
+    eventsVec.clear();
     shakeMapList.clear();
 }
