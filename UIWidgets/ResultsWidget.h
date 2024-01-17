@@ -39,11 +39,14 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 // Written by: Stevan Gavrilovic
 
 #include "SimCenterAppWidget.h"
-
+#include "QGISVisualizationWidget.h"
+#include <QJsonArray>
+#include "qgsproject.h"
 class AssetInputDelegate;
 class PelicunPostProcessor;
 class VisualizationWidget;
 class CBCitiesPostProcessor;
+
 
 class QTabWidget;
 class QStackedWidget;
@@ -65,10 +68,6 @@ public:
     virtual bool inputFromJSON(QJsonObject &rvObject);
 
     virtual int processResults(QString resultsDir);
-
-#ifdef ARC_GIS
-    void setCurrentlyViewable(bool status);
-#endif
 
     void clear(void);
 
@@ -99,7 +98,9 @@ private:
     QWidget* resultsPageWidget = nullptr;
 
     AssetInputDelegate* selectComponentsLineEdit = nullptr;
-    VisualizationWidget* theVisualizationWidget = nullptr;
+    QGISVisualizationWidget* theVisualizationWidget = nullptr;
+
+    QWidget *theParent = nullptr;
 
     std::unique_ptr<PelicunPostProcessor> thePelicunPostProcessor;
     std::unique_ptr<CBCitiesPostProcessor> theCBCitiesPostProcessor;

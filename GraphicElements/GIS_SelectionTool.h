@@ -1,5 +1,6 @@
-#ifndef RENDERERTABLEVIEW_H
-#define RENDERERTABLEVIEW_H
+#ifndef GIS_SelectionTool_H
+#define GIS_SelectionTool_H
+
 /* *****************************************************************************
 Copyright (c) 2016-2021, The Regents of the University of California (Regents).
 All rights reserved.
@@ -19,7 +20,7 @@ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
 ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -36,37 +37,49 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 *************************************************************************** */
 
+
 // Written by: Stevan Gavrilovic
 
-#include "ColorDialogDelegate.h"
-#include "RendererComboBoxItemDelegate.h"
+#include <QGraphicsItem>
+#include <QObject>
 
-#include <QTableView>
+#include <qgsmaptool.h>
+#include <QGraphicsItem>
 
-class RendererModel;
+class QgsMapCanvas;
+class VisualizationWidget;
+class GridNode;
 
-namespace Esri
-{
-namespace ArcGISRuntime
-{
-class ClassBreaksRenderer;
-}
-}
-
-class RendererTableView : public QTableView
+class GIS_SelectionTool : public QgsMapTool, public QGraphicsItem
 {
     Q_OBJECT
-
+    Q_INTERFACES(QGraphicsItem)
+    
 public:
-    RendererTableView(QWidget* parent);
+    
+  GIS_SelectionTool(QgsMapCanvas *);
+  virtual ~GIS_SelectionTool();
 
-    void setRenderer(Esri::ArcGISRuntime::ClassBreaksRenderer* renderer);
+  virtual QVector<GridNode *> getGridNodeVec() const =0;
+  virtual void setVisualizationWidget(VisualizationWidget *value) =0;
+  virtual void setCanvas(QgsMapCanvas *parent) =0;  
+  virtual void createGrid() =0;
+  virtual void clearGrid() = 0;
+  virtual void removeGridFromScene(void) = 0;
+  virtual void show() = 0;
+
+signals:
+  void selectionChanged(void);
+  void geometryChanged();
+
+private:  
+
+private slots:
+
+protected:
 
 private:
-    RendererModel* dataModel;
 
-    std::unique_ptr<ColorDialogDelegate> colorDelegate;
-    std::unique_ptr<RendererComboBoxItemDelegate> esriTypeComboDelegate;
 };
 
-#endif // RENDERERTABLEVIEW_H
+#endif // GIS_SelectionTool_H

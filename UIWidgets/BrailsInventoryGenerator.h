@@ -1,5 +1,6 @@
-#ifndef ArcGISHurricanePreprocessor_H
-#define ArcGISHurricanePreprocessor_H
+#ifndef BrailsInventoryGenerator_H
+#define BrailsInventoryGenerator_H
+
 /* *****************************************************************************
 Copyright (c) 2016-2021, The Regents of the University of California (Regents).
 All rights reserved.
@@ -36,65 +37,60 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 *************************************************************************** */
 
-// Written by: Stevan Gavrilovic
+// Written by: fmk, Stevan Gavrilovic
+#include "SimCenterAppWidget.h"
 
-#include "HurricaneObject.h"
+class SimCenterMapcanvasWidget;
+class QGISVisualizationWidget;
+class VisualizationWidget;
+class GIS_Selection;
+class SC_DoubleLineEdit;
+class SC_FileEdit;
+class BrailsGoogleDialog;
 
-#include <QString>
-#include <QStringList>
-#include <QVector>
-#include <QVariant>
+typedef struct BrailsDataStruct {
+  double minLat;
+  double maxLat;
+  double minLong;
+  double maxLong;
+  QString outputFile;
+  QString imageSource;
+  QString imputationAlgo;    
+} BrailsData;
 
-class ArcGISVisualizationWidget;
-class LayerTreeItem;
 
-class QObject;
-class QProgressBar;
-
-namespace Esri
+class BrailsInventoryGenerator : public SimCenterAppWidget
 {
-namespace ArcGISRuntime
-{
-class Layer;
-class GroupLayer;
-class Geometry;
-}
-}
+    Q_OBJECT
 
-class ArcGISHurricanePreprocessor
-{
 public:
-    ArcGISHurricanePreprocessor(QProgressBar* pBar, ArcGISVisualizationWidget* visWidget, QObject* parent);
+    BrailsInventoryGenerator(VisualizationWidget* visWidget, QWidget *parent = nullptr);
+    ~BrailsInventoryGenerator();
 
-    int loadHurricaneTrackData(const QString &eventFile, QString &err);
-
+public slots:
     void clear(void);
 
-    // Gets the hurricane of the given storm id
-    HurricaneObject* getHurricane(const QString& SID);
+signals:
 
-    Esri::ArcGISRuntime::Layer *getAllHurricanesLayer() const;
+protected:
 
-    // Creates a hurricane visualization of the track and track points if desired
-    LayerTreeItem* createTrackVisualization(HurricaneObject* hurricane, LayerTreeItem* parentItem, Esri::ArcGISRuntime::GroupLayer* parentLayer, QString& err);
-
-    // Note that including track points may take a long time, moreover not all hurricanes have a landfall
-    LayerTreeItem*  createTrackPointsVisualization(HurricaneObject* hurricane, LayerTreeItem* parentItem, Esri::ArcGISRuntime::GroupLayer* parentLayer, QString& err);
-
-    LayerTreeItem* createLandfallVisualization(const double latitude,
-                                               const double longitude,
-                                               const QMap<QString, QVariant>& featureAttributes,
-                                               LayerTreeItem* parentItem,
-                                               Esri::ArcGISRuntime::GroupLayer* parentLayer);
-
+private slots:
+  void runBRAILS(void);
+  void coordsChanged(void);
+  
 private:
+  std::unique_ptr<SimCenterMapcanvasWidget> mapViewSubWidget;
+  QGISVisualizationWidget* theVisualizationWidget = nullptr;
+  
+  
+  SC_DoubleLineEdit *minLat, *maxLat, *minLong, *maxLong;
+  SC_FileEdit *theOutputFile;
+  GIS_Selection *theSelectionWidget;  
 
-    Esri::ArcGISRuntime::Geometry getTrackGeometry(HurricaneObject* hurricane, QString& err);
-    Esri::ArcGISRuntime::Layer* allHurricanesLayer;
-    QProgressBar* theProgressBar;
-    ArcGISVisualizationWidget* theVisualizationWidget;
-    QObject* theParent;
-    QVector<HurricaneObject> hurricanes;
+  QString imageSource;
+  QString imputationAlgo;
+
+  BrailsGoogleDialog *theGoogleDialog = 0;
 };
 
-#endif // ArcGISHurricanePreprocessor_H
+#endif // BrailsInventoryGenerator_H

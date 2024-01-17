@@ -37,23 +37,21 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 // Written by: Stevan Gavrilovic, Frank McKenna
 
 #include "AssetsWidget.h"
-#include "SecondaryComponentSelection.h"
+//#include "SecondaryComponentSelection.h"
 #include "VisualizationWidget.h"
-#include "sectiontitle.h"
+#include "SectionTitle.h"
 #include "SimCenterAppSelection.h"
 
-#ifdef ARC_GIS
-#include "ArcGISBuildingInputWidget.h"
-#include "ArcGISGasPipelineInputWidget.h"
-#endif
-
-#ifdef Q_GIS
 #include "PointAssetInputWidget.h"
 #include "LineAssetInputWidget.h"
 #include "CSVWaterNetworkInputWidget.h"
 #include "GISAssetInputWidget.h"
 #include "GISWaterNetworkInputWidget.h"
-#endif
+//#include "CSVTransportNetworkInputWidget.h"
+#include "GISTransportNetworkInputWidget.h"
+#include "GeojsonAssetInputWidget.h"
+//#include "InpFileWaterInputWidget.h"
+
 
 // Qt headers
 #include <QCheckBox>
@@ -79,44 +77,64 @@ AssetsWidget::AssetsWidget(QWidget *parent, VisualizationWidget* visWidget)
     buildingWidget = new SimCenterAppSelection(QString("Regional Building Inventory"), QString("Buildings"), this);
     gasPipelineWidget = new SimCenterAppSelection(QString("Regional Gas Pipelines"), QString("NaturalGasPipelines"), this);
     waterNetworkWidget = new SimCenterAppSelection(QString("Regional Water Network"), QString("WaterDistributionNetwork"), this);
+    transportNetworkWidget = new SimCenterAppSelection(QString("Regional Transportation Network"), QString("TransportationNetwork"), this);
 
-#ifdef ARC_GIS
-    ArcGISBuildingInputWidget *csvBuildingInventory = new ArcGISBuildingInputWidget(this,"Buildings","CSV_to_AIM");
-    buildingWidget->addComponent(QString("CSV to AIM"), QString("CSV_to_AIM"), csvBuildingInventory);
-#endif
-
-#ifdef Q_GIS
+    // Buildings
     PointAssetInputWidget *csvBuildingInventory = new PointAssetInputWidget(this, visualizationWidget, "Buildings","CSV_to_AIM");
     buildingWidget->addComponent(QString("CSV to AIM"), QString("CSV_to_AIM"), csvBuildingInventory);
 
     GISAssetInputWidget *GISBuildingInventory = new GISAssetInputWidget(this,visualizationWidget,"Buildings","GIS_to_AIM");
     buildingWidget->addComponent(QString("GIS File to AIM"), QString("GIS_to_AIM"), GISBuildingInventory);
-#endif
 
-#ifdef ARC_GIS
-    ArcGISGasPipelineInputWidget *csvPipelineInventory = new ArcGISGasPipelineInputWidget(this,"Gas Pipelines","Gas Network");
-    pipelineWidget->addComponent(QString("CSV to Pipeline"), QString("CSV_to_PIPELINE"), csvPipelineInventory);
-#endif
+    GeojsonAssetInputWidget *GeoJsonBuildingAssetInventory = new GeojsonAssetInputWidget(this,visualizationWidget,"Buildings","GEOJSON_TO_ASSET");
+    buildingWidget->addComponent(QString("GeoJSON to Asset"), QString("GEOJSON_TO_ASSET"), GeoJsonBuildingAssetInventory);
 
-#ifdef Q_GIS
+    // Gas pipelines
     LineAssetInputWidget *csvPipelineInventory = new LineAssetInputWidget(this, visualizationWidget, "Gas Pipelines","Gas Network");
     gasPipelineWidget->addComponent(QString("CSV to Pipeline"), QString("CSV_to_PIPELINE"), csvPipelineInventory);
 
-
+    // Water networks
+    
     CSVWaterNetworkInputWidget *csvWaterNetworkInventory = new CSVWaterNetworkInputWidget(this, visualizationWidget);
     waterNetworkWidget->addComponent(QString("CSV to Water Network"), QString("CSV_to_WATERNETWORK"), csvWaterNetworkInventory);
+
+    /*
+    InpFileWaterInputWidget *inpFileWaterInput = new InpFileWaterInputWidget(this,visualizationWidget,"Water Networks","INP_FILE");
+    waterNetworkWidget->addComponent(QString("EPANET INP File"), QString("INP_FILE"), inpFileWaterInput);
+    */
+    
+    GeojsonAssetInputWidget *GeoJsonWaterNetworkAssetInventory = new GeojsonAssetInputWidget(this,visualizationWidget,"Water Networks","GEOJSON_TO_ASSET");
+    waterNetworkWidget->addComponent(QString("GeoJSON to Asset"), QString("GEOJSON_TO_ASSET"), GeoJsonWaterNetworkAssetInventory);
 
 
     GISWaterNetworkInputWidget *gisWaterNetworkInventory = new GISWaterNetworkInputWidget(this, visualizationWidget);
     waterNetworkWidget->addComponent(QString("GIS to Water Network"), QString("GIS_to_WATERNETWORK"), gisWaterNetworkInventory);
-#endif
 
-    // QString pathToPipelineInfoFile = "/Users/steve/Desktop/SimCenter/Examples/CECPipelineExample/sample_input.csv";
-    // csvBuildingInventory->testFileLoad(pathToBuildingInfoFile);
+    // Transportation networks
+//    CSVTransportNetworkInputWidget *csvTransportNetworkInventory = new CSVTransportNetworkInputWidget(this, visualizationWidget);
+//    transportNetworkWidget->addComponent(QString("CSV to Transportation Network"), QString("CSV_to_TRANSPORTNETWORK"), csvTransportNetworkInventory);
+
+    GISTransportNetworkInputWidget *gisTransportNetworkInventory = new GISTransportNetworkInputWidget(this, visualizationWidget);
+    transportNetworkWidget->addComponent(QString("GIS to Transportation Network"), QString("GIS_to_TRANSPORTNETWORK"), gisTransportNetworkInventory);
+
+    GeojsonAssetInputWidget *GeoJsonTransportNetworkAssetInventory = new GeojsonAssetInputWidget(this,visualizationWidget,"Transportation Network","GEOJSON_TO_ASSET");
+    //    QWidget* roadLengthWidget = new QWidget();
+    //    QHBoxLayout* roadLengthLayout = new QHBoxLayout(roadLengthWidget);
+    //    QLabel* roadLengthLabel = new QLabel("Maximum roadway length (m) per AIM",this);
+    //    QLineEdit* roadLengthLineEdit = new QLineEdit(this);
+    //    roadLengthLineEdit->setText("100.0");
+    //    QDoubleValidator *validator = new QDoubleValidator(this);
+    //    validator->setBottom(0.0);
+    //    roadLengthLayout->addWidget(roadLengthLabel);
+    //    roadLengthLayout->addWidget(roadLengthLineEdit);
+    //    GeoJsonTransportNetworkAssetInventory->insertLineEditToMainLayout(1, roadLengthWidget, roadLengthLineEdit, "Roadway", "maxRoadLength_m");
+    transportNetworkWidget->addComponent(QString("GeoJSON to Asset"), QString("GEOJSON_TO_ASSET"), GeoJsonTransportNetworkAssetInventory);
+
 
     this->addComponent("Buildings", buildingWidget);
     this->addComponent("Gas Network",gasPipelineWidget);
     this->addComponent("Water Network",waterNetworkWidget);
+    this->addComponent("Transportation Network", transportNetworkWidget);
     this->hideAll();
 }
 
@@ -132,6 +150,7 @@ void AssetsWidget::clear(void)
     buildingWidget->clear();
     gasPipelineWidget->clear();
     waterNetworkWidget->clear();
+    transportNetworkWidget->clear();
 }
 
 

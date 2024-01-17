@@ -4,6 +4,9 @@
 #include "HousingUnitAllocationWidget.h"
 #include "QGISVisualizationWidget.h"
 #include "QGISHurricaneSelectionWidget.h"
+#include "OpenQuakeSelectionWidget.h"
+#include "BrailsInventoryGenerator.h"
+#include "BrailsTranspInventoryGenerator.h"
 #include "GMWidget.h"
 
 #include <QVBoxLayout>
@@ -62,6 +65,47 @@ void ToolDialog::handleShowEQGMSimTool(void)
     }
 
     mainWidget->setCurrentWidget(theEQSSWidget);
+
+    this->showMaximized();
+}
+
+
+void ToolDialog::handleShowOpenquakeSelectionTool(void)
+{
+    if(theOpenQuakeSelectionWidget == nullptr)
+    {
+        theOpenQuakeSelectionWidget = new OpenQuakeSelectionWidget(visualizationWidget,this);
+        mainWidget->addWidget(theOpenQuakeSelectionWidget);
+    }
+
+    mainWidget->setCurrentWidget(theOpenQuakeSelectionWidget);
+
+    this->showMaximized();
+}
+
+
+void ToolDialog::handleBrailsInventoryTool(void)
+{
+    if(theBrailsInventoryGeneratorWidget == nullptr)
+    {
+        theBrailsInventoryGeneratorWidget = new BrailsInventoryGenerator(visualizationWidget,this);
+        mainWidget->addWidget(theBrailsInventoryGeneratorWidget);
+    }
+
+    mainWidget->setCurrentWidget(theBrailsInventoryGeneratorWidget);
+
+    this->showMaximized();
+}
+
+void ToolDialog::handleBrailsTranspInventoryTool(void)
+{
+    if(theBrailsTranspInventoryGeneratorWidget == nullptr)
+    {
+        theBrailsTranspInventoryGeneratorWidget = new BrailsTranspInventoryGenerator(visualizationWidget,this);
+        mainWidget->addWidget(theBrailsTranspInventoryGeneratorWidget);
+    }
+
+    mainWidget->setCurrentWidget(theBrailsTranspInventoryGeneratorWidget);
 
     this->showMaximized();
 }

@@ -1,5 +1,5 @@
-#ifndef RENDERERMODEL_H
-#define RENDERERMODEL_H
+#ifndef GIS_Selection_H
+#define GIS_Selection_H
 /* *****************************************************************************
 Copyright (c) 2016-2021, The Regents of the University of California (Regents).
 All rights reserved.
@@ -36,42 +36,66 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 *************************************************************************** */
 
-// Written by: Stevan Gavrilovic
-
-namespace Esri
-{
-namespace ArcGISRuntime
-{
-class ClassBreaksRenderer;
-}
-}
-
-#include <QAbstractTableModel>
+// Written by: fmk using cut & paste of existing code created by Stevan Gavrilovic
 
 
-class RendererModel : public QAbstractTableModel
+
+#include "SimCenterAppWidget.h"
+class PlainRectangle;
+
+class SimCenterMapcanvasWidget;
+class QGISVisualizationWidget;
+class VisualizationWidget;
+
+class QgsMapLayer;
+class QgsVectorLayer;
+class QgsLayerTreeGroup;
+
+class QStackedWidget;
+class QProgressBar;
+class QLabel;
+class QLineEdit;
+
+class GIS_Selection : public SimCenterAppWidget
 {
     Q_OBJECT
 
 public:
-    RendererModel(QObject* parent);
-    void setRenderer(Esri::ArcGISRuntime::ClassBreaksRenderer* renderer);
+  GIS_Selection(VisualizationWidget* visWidget, QWidget *parent = nullptr);
+  ~GIS_Selection();
+  QVector<double> getSelectedPoints(void);
+		  
+public slots:
+  
+  void clear(void);
+  void handleSelectionGeometryChange();
+  
+signals:
+  void selectionGeometryChanged();
 
-    // QAbstractItemModel interface
-public:
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+protected:
 
-    int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+  void showEvent(QShowEvent *e);
 
-    QVariant data(const QModelIndex &index, int role) const override;
-    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
-    Qt::ItemFlags flags(const QModelIndex &index) const override;
+private slots:
+    void clearSelection(void);
 
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+  void handleRectangleSelect(void);
+  //  void handlePolygonSelect(void);
+  //  void handleRadiusSelect(void);
+  //  void handleFreehandSelect(void);
+  //  void handleNoneSelect(void);
+
+    void handleSelectionDone(void);
 
 private:
-    Esri::ArcGISRuntime::ClassBreaksRenderer* m_renderer = nullptr;
+  std::unique_ptr<SimCenterMapcanvasWidget> mapViewSubWidget;
+  QGISVisualizationWidget* theVisualizationWidget = nullptr;
 
+  PlainRectangle *userGrid = 0;
+
+  QVector<double> selectedPoints;
 };
 
-#endif // RENDERERMODEL_H
+
+#endif // GIS_Selection_H

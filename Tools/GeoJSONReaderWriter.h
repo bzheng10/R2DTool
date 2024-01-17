@@ -1,5 +1,5 @@
-#ifndef LayerComboBoxItemDelegate_H
-#define LayerComboBoxItemDelegate_H
+#ifndef GeoJSONReaderWriter_H
+#define GeoJSONReaderWriter_H
 /* *****************************************************************************
 Copyright (c) 2016-2021, The Regents of the University of California (Regents).
 All rights reserved.
@@ -19,7 +19,7 @@ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
 ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -38,35 +38,28 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 // Written by: Stevan Gavrilovic
 
-#include <QStyledItemDelegate>
+#include <QVector>
 
-namespace Esri
-{
-namespace ArcGISRuntime
-{
-class FeatureCollectionLayer;
-}
-}
+class QString;
+class QStringList;
 
-class LayerComboBoxItemDelegate : public QStyledItemDelegate
+class GeoJSONReaderWriter
 {
 public:
-    LayerComboBoxItemDelegate(QObject *parent = nullptr);
+    GeoJSONReaderWriter();
 
-    QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+    // Saves data in the format of a GeoJson file
+    int saveGeoJsonFile(const QVector<QStringList>& data,
+                        const QStringList& headers,
+                        const QString assetType,
+                        const QString& pathToFile,
+                        QString& err);
 
-    void setEditorData(QWidget *editor, const QModelIndex &index) const override;
-
-    void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
-
-    void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
-
-    void setLayer(Esri::ArcGISRuntime::FeatureCollectionLayer *layer);
 
 private:
 
-    Esri::ArcGISRuntime::FeatureCollectionLayer* m_layer = nullptr;
+    int getIndexOfVal(const QStringList& headersStr, const QString val);
 
 };
 
-#endif // LayerComboBoxItemDelegate_H
+#endif // GeoJSONReaderWriter_H

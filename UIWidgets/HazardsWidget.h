@@ -43,7 +43,6 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 class GMWidget;
 class ShakeMapWidget;
 class HurricaneSelectionWidget;
-class OpenQuakeSelectionWidget;
 class UserInputHurricaneWidget;
 class UserInputGMWidget;
 class RegionalSiteResponseWidget;
@@ -58,10 +57,6 @@ class HazardsWidget : public  SimCenterAppSelection
 public:
     HazardsWidget(QWidget *parent, VisualizationWidget* visWidget);
     ~HazardsWidget();
-
-#ifdef ARC_GIS
-    void setCurrentlyViewable(bool status);
-#endif
 
 signals:
     void gridFileChangedSignal(QString motionDir, QString eventFile);
@@ -81,7 +76,6 @@ private:
     UserInputGMWidget* theUserInputGMWidget = nullptr;
     RegionalSiteResponseWidget* theRegionalSiteResponseWidget = nullptr;
     UserInputHurricaneWidget* theUserInputHurricaneWidget = nullptr;
-    OpenQuakeSelectionWidget* theOpenQuakeSelectionWidget = nullptr;
     SimCenterAppWidget* theRasterHazardWidget = nullptr;
     SimCenterAppWidget* theGISHazardWidget = nullptr;
 };

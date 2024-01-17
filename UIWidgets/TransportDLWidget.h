@@ -1,5 +1,5 @@
-#ifndef LayerManagerDialog_H
-#define LayerManagerDialog_H
+#ifndef TransportDLWidget_H
+#define TransportDLWidget_H
 /* *****************************************************************************
 Copyright (c) 2016-2021, The Regents of the University of California (Regents).
 All rights reserved.
@@ -19,7 +19,7 @@ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
 ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -36,42 +36,52 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 *************************************************************************** */
 
-// Written by: Stevan Gavrilovic
+// Written by: Stevan Gavrilovic, Jinyan Zhao
 
-#include <QObject>
-#include <QColor>
+#include "SimCenterAppWidget.h"
 
-class RendererTableView;
-class LayerManagerTableView;
+class QComboBox;
+class QCheckBox;
+class QLineEdit;
+class QHBoxLayout;
+class QWidget;
 
-class QColorDialog;
-class QDialog;
-
-namespace Esri
+class TransportDLWidget : public SimCenterAppWidget
 {
-namespace ArcGISRuntime
-{
-class ClassBreaksRenderer;
-class FeatureCollectionLayer;
-}
-}
+    Q_OBJECT
 
-class LayerManagerDialog : public QObject
-{
 public:
-    LayerManagerDialog(QWidget* parent = nullptr);
+    explicit TransportDLWidget(QWidget *parent = nullptr);
 
-    int changeLayer(Esri::ArcGISRuntime::FeatureCollectionLayer* layer);
+    bool outputAppDataToJSON(QJsonObject &jsonObject);
 
-    int changeClassBreaksRenderer(Esri::ArcGISRuntime::ClassBreaksRenderer* cbRenderer);
+    bool inputAppDataFromJSON(QJsonObject &jsonObject);
+
+    void clear(void);
+
+    bool copyFiles(QString &destName);
+
+    bool recursiveCopy(const QString &sourcePath, const QString &destPath);
+
+public slots:
+
+    void handleComboBoxChanged(const QString &text);
+    void handleBrowseButton1Pressed(void);
+    void handleBrowseButton2Pressed(void);
 
 private:
+    QWidget* autoPopulateScriptWidget;
+    QWidget* fragDirWidget;
 
-    QDialog* layerManagerDialog;
-    QDialog* classBreaksDialog;
-
-    RendererTableView* rendererTableView;
-    LayerManagerTableView* layerManagerTableView;
+    QComboBox* DLTypeComboBox;
+    QLineEdit* realizationsLineEdit;
+    QComboBox* eventTimeComboBox;
+    QCheckBox* detailedResultsCheckBox;
+    QCheckBox* logFileCheckBox;
+    QCheckBox* coupledEDPCheckBox;
+    QCheckBox* groundFailureCheckBox;
+    QLineEdit* autoPopulationScriptLineEdit;
+    QLineEdit* fragilityDirLineEdit;
 };
 
-#endif // LayerManagerDialog_H
+#endif // TransportDLWidget_H

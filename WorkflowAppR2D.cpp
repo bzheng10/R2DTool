@@ -71,14 +71,7 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 #include "ToolDialog.h"
 
 #include "VisualizationWidget.h"
-
-#ifdef ARC_GIS
-#include "ArcGISVisualizationWidget.h"
-#endif
-
-#ifdef Q_GIS
 #include "QGISVisualizationWidget.h"
-#endif
 
 #include <QApplication>
 #include <QCoreApplication>
@@ -229,6 +222,9 @@ void WorkflowAppR2D::initialize(void)
     toolsMenu->addAction("&Earthquake Scenario Simulation", theToolDialog, &ToolDialog::handleShowEQGMSimTool);
     toolsMenu->addAction("&Hurricane Scenario Simulation", theToolDialog, &ToolDialog::handleShowHurricaneSimTool);
     toolsMenu->addAction("&Census Data Allocation", theToolDialog, &ToolDialog::handleShowCensusAppTool);
+    toolsMenu->addAction("&OpenQuake Source Selection", theToolDialog, &ToolDialog::handleShowOpenquakeSelectionTool);
+    toolsMenu->addAction("&BRAILS-Buildings", theToolDialog, &ToolDialog::handleBrailsInventoryTool);
+	toolsMenu->addAction("&BRAILS-Transportation", theToolDialog, &ToolDialog::handleBrailsTranspInventoryTool);
     menuBar->insertMenu(menuAfter, toolsMenu);
 
 
@@ -279,7 +275,9 @@ void WorkflowAppR2D::initialize(void)
     theComponentSelection->addComponent(tr("UQ"), theUQWidget);
     theComponentSelection->addComponent(tr("RV"), theRVs);
     theComponentSelection->addComponent(tr("RES"), theResultsWidget);
-//    theComponentSelection->addComponent(tr("PRF"), thePerformanceWidget);
+    /* *********************** Performance ***************************** 
+    theComponentSelection->addComponent(tr("PRF"), thePerformanceWidget);    
+    ******************************************************************** */
 
 
     theComponentSelection->displayComponent("VIZ");
@@ -288,14 +286,6 @@ void WorkflowAppR2D::initialize(void)
 
     // for RDT select Buildings in GeneralInformation by default
     theGeneralInformationWidgetR2D->setAssetTypeState("Buildings", true);
-
-    // Test to remove start
-    // theComponentSelection->displayComponent("HAZ");
-//     loadFile("/Users/steve/Desktop/E11SeasideWaterNetwork/input.json");
-//     loadFile("/Users/steve/Desktop/E12EastBayWaterNetwork/input.json");
-//     loadResults();
-    // Test to remove end
-
 }
 
 
@@ -375,11 +365,13 @@ bool WorkflowAppR2D::outputToJSON(QJsonObject &jsonObjectTop)
         result = false;
     }
 
+    /* **************************** Performance ***************************** 
     if (thePerformanceWidget->outputAppDataToJSON(apps) == false) {
         this->errorMessage("Error writing PRF data to output");
         thePerformanceWidget->clear();
         result = false;
     }
+    **************************** Performance ***************************** */    
     
     if (theUQWidget->outputAppDataToJSON(apps) == false) {
         this->errorMessage("Error writing UQ data to output");
@@ -400,18 +392,21 @@ bool WorkflowAppR2D::outputToJSON(QJsonObject &jsonObjectTop)
 
             NoArgSimCenterApp *theNoArgWidget = dynamic_cast<NoArgSimCenterApp *>(theCurrentSelection);
             if (theNoArgWidget == nullptr || theNoArgWidget->getAppName() != "IMasEDP") {
+                QJsonObject buildingEdp;
                 QJsonObject edpData;
                 edpData["Application"]="StandardEarthquakeEDP";
                 QJsonObject edpAppData;
                 edpData["ApplicationData"] = edpAppData;
-                apps["EDP"] = edpData;
+                buildingEdp["Buildings"] = edpData;
+                apps["EDP"] = buildingEdp;
             }
         }
     }
 
     jsonObjectTop.insert("Applications",apps);
     //  output regular data
-
+    jsonObjectTop["commonFileDir"]=commonFilePath;
+    
     theRunWidget->outputToJSON(jsonObjectTop);
     theAssetsWidget->outputToJSON(jsonObjectTop);
     theModelingWidget->outputToJSON(jsonObjectTop);
@@ -420,12 +415,13 @@ bool WorkflowAppR2D::outputToJSON(QJsonObject &jsonObjectTop)
     theAnalysisWidget->outputToJSON(jsonObjectTop);
     theDamageAndLossWidget->outputToJSON(jsonObjectTop);
     theHazardToAssetWidget->outputToJSON(jsonObjectTop);
-    thePerformanceWidget->outputToJSON(jsonObjectTop);
+    /* **************************** Performance *****************************
+    thePerformanceWidget->outputToJSON(jsonObjectTop);       
+    ******************************* Performance ***************************** */
+    
     theUQWidget->outputToJSON(jsonObjectTop);
     theRVs->outputToJSON(jsonObjectTop);
 
-    jsonObjectTop["commonFileDir"]=commonFilePath;
-    
     QJsonObject defaultValues;
     defaultValues["workflowInput"]=QString("scInput.json");    
     //defaultValues["filenameAIM"]=QString("AIM.json");
@@ -472,7 +468,9 @@ void WorkflowAppR2D::clear(void)
     theAssetsWidget->clear();
     theHazardsWidget->clear();
     theDamageAndLossWidget->clear();
+    /* **************************** Performance *****************************    
     thePerformanceWidget->clear();
+    ****************************** Performance ***************************** */    
     theResultsWidget->clear();
     theVisualizationWidget->clear();
     // progressDialog->clear();
@@ -515,7 +513,7 @@ bool WorkflowAppR2D::inputFromJSON(QJsonObject &jsonObject)
             theLocalEvent->clear();
             result = false;
         }	
-
+	
         if (theAnalysisWidget->inputAppDataFromJSON(apps) == false) {
             this->errorMessage("ANA failed to read input data");
             theAnalysisWidget->clear();
@@ -533,7 +531,7 @@ bool WorkflowAppR2D::inputFromJSON(QJsonObject &jsonObject)
             theAssetsWidget->clear();
             result = false;
         }
-
+	
         if (theHazardsWidget->inputAppDataFromJSON(apps) == false) {
             this->errorMessage("HAZ failed to read input data");
             theHazardsWidget->clear();
@@ -546,18 +544,21 @@ bool WorkflowAppR2D::inputFromJSON(QJsonObject &jsonObject)
             result = false;
         }
 
-        if (thePerformanceWidget->inputAppDataFromJSON(apps) == false) {
+	/* **************************** Performance *****************************
+	  if (thePerformanceWidget->inputAppDataFromJSON(apps) == false) {
             this->errorMessage("PRF failed to read input data");
             thePerformanceWidget->clear();
             result = false;
         }
-
-    } else
-    {
+        *************************************************************************/
+	
+    } else {
         this->errorMessage("Error, no Applications field in input file");
         return false;
     }
 
+
+    
     //
     // now read app specific data
     //
@@ -607,11 +608,12 @@ bool WorkflowAppR2D::inputFromJSON(QJsonObject &jsonObject)
       this->errorMessage("DL failed to read app specific data");
       result = false;
     }
-    
+    /* **************************** Performance *****************************	       
     if (thePerformanceWidget->inputFromJSON(jsonObject) == false) {
       this->errorMessage("PRF failed to read app specific data");
       result = false;
     }
+    **************************** Performance ******************************** */
     
     return result;
 }
@@ -689,14 +691,17 @@ void WorkflowAppR2D::setUpForApplicationRun(QString &workingDir, QString &subDir
     else
         destinationDirectory.mkpath(tmpDirectory);
 
-
-    qDebug() << "WorkflowAppR2D is changinging subDir to input_data";
+    theResultsWidget->clear();
+    //qDebug() << "WorkflowAppR2D is changinging subDir to input_data";
     subDir = "input_data";
 
     QString templateDirectory  = destinationDirectory.absoluteFilePath(subDir);
     destinationDirectory.mkpath(templateDirectory);
 
-    commonFilePath = templateDirectory;
+    commonFilePath = subDir;
+    
+    // FMK
+    
     // copyPath(path, tmpDirectory, false);
     //    theSIM->copyFiles(templateDirectory);
     //    theEventSelection->copyFiles(templateDirectory);
@@ -795,13 +800,19 @@ void WorkflowAppR2D::setUpForApplicationRun(QString &workingDir, QString &subDir
         return;
     }
 
+    /* FMK THINKING ABOUT THIS ONE ****************************
+    // rel paths in input file for loading later
+    QFileInfo fileInfo(inputFile);
+    SCUtils::ResolveRelativePaths(json, fileInfo.dir());
+    * ******************************************************* */
+    
     json["runDir"]=tmpDirectory;
     json["WorkflowType"]="Regional Simulation";
-
+    
     QJsonDocument doc(json);
     file.write(doc.toJson());
     file.close();
-
+    
     statusMessage("Setup done. Now starting application.");
 
     QApplication::processEvents();
@@ -812,7 +823,10 @@ void WorkflowAppR2D::setUpForApplicationRun(QString &workingDir, QString &subDir
 
 int WorkflowAppR2D::loadFile(QString &fileName){
 
+    //
     // check file exists & set apps current dir of it does
+    //
+    
     QFileInfo fileInfo(fileName);
     if (!fileInfo.exists()){
         this->errorMessage(QString("File does not exist: ") + fileName);
@@ -821,8 +835,7 @@ int WorkflowAppR2D::loadFile(QString &fileName){
 
     QString dirPath = fileInfo.absoluteDir().absolutePath();
     QDir::setCurrent(dirPath);
-    // qDebug() << "WorkflowAppR2D: setting current dir" << dirPath;
-
+    
     //
     // open file
     //
@@ -845,35 +858,33 @@ int WorkflowAppR2D::loadFile(QString &fileName){
     // close file
     file.close();
 
-    progressDialog->showProgressBar();
-    QApplication::processEvents();
-
-    // Clear this before loading a new file
-    this->clear();
-
+    //
     // Clean up and find the relative paths if the paths are wrong
+    //
+    
     SCUtils::ResolveAbsolutePaths(jsonObj, fileInfo.dir());
     SCUtils::PathFinder(jsonObj,dirPath);
+    
+    //
+    // clear current and input from new JSON
+    //
 
-    auto res = this->inputFromJSON(jsonObj);
-    if(res == false)
-    {
+    this->clear();
+    bool res = this->inputFromJSON(jsonObj);
+    if(res == false) {
         this->errorMessage("Failed to load the input file: " + fileName);
-        progressDialog->hideProgressBar();
         return -1;
-    }
+    } 
 
-    progressDialog->hideProgressBar();
-
+    this->statusMessage("Done Loading File");
+    /*
     auto fileSender = qobject_cast<RemoteJobManager*>(QObject::sender());
     if(fileSender == nullptr)
-        this->statusMessage("Done loading input file.  Click on the 'RUN' button to run an analysis.");
+    this->statusMessage("Done Loading File");
     else
-        this->statusMessage("Done loading from remote.");
-
-    // Automatically hide after n seconds
-    // progressDialog->hideAfterElapsedTime(4);
-
+        this->statusMessage("Done Downloading & Loading Remote File");
+    */
+    
     return 0;
 }
 
@@ -892,7 +903,9 @@ void WorkflowAppR2D::assetSelectionChanged(QString text, bool value)
         theModelingWidget->show(text);
 	//        theLocalEvent->show(text);
         theAnalysisWidget->show(text);
+	/* ********* PERFORMANCE **********
         thePerformanceWidget->show(text);
+	* *********************************/
         theDamageAndLossWidget->show(text);
         theUQWidget->show(text);
     }
@@ -903,7 +916,9 @@ void WorkflowAppR2D::assetSelectionChanged(QString text, bool value)
         theModelingWidget->hide(text);
         //theLocalEvent->hide(text);	
         theAnalysisWidget->hide(text);
+	/* ********* PERFORMANCE **********	
         thePerformanceWidget->hide(text);
+	*********************************** */	
         theDamageAndLossWidget->hide(text);
         theUQWidget->hide(text);
     }

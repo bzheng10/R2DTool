@@ -1,3 +1,6 @@
+#ifndef Pelicun3DLWidget_H
+#define Pelicun3DLWidget_H
+
 /* *****************************************************************************
 Copyright (c) 2016-2021, The Regents of the University of California (Regents).
 All rights reserved.
@@ -17,7 +20,7 @@ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
 ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -36,53 +39,59 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 // Written by: Stevan Gavrilovic
 
-#include "RendererTableView.h"
-#include "RendererModel.h"
+#include "SimCenterAppWidget.h"
+#include "Pelicun3PostProcessor.h"
+#include "VisualizationWidget.h"
+#include <QMainWindow>
 
-#include <QHeaderView>
+class QComboBox;
+class QCheckBox;
+class QLineEdit;
+class QHBoxLayout;
+class QWidget;
 
-RendererTableView::RendererTableView(QWidget* parent) : QTableView(parent)
+class Pelicun3DLWidget : public SimCenterAppWidget
 {
-    dataModel = new RendererModel(this);
-    this->setModel(dataModel);
+    Q_OBJECT
 
-    this->setSelectionMode(QAbstractItemView::SingleSelection);
+public:
+    explicit Pelicun3DLWidget(QWidget *parent = nullptr);
 
-    this->verticalHeader()->hide();
+    bool outputAppDataToJSON(QJsonObject &jsonObject);
 
-    colorDelegate = std::make_unique<ColorDialogDelegate>();
-    esriTypeComboDelegate = std::make_unique<RendererComboBoxItemDelegate>();
+    bool inputAppDataFromJSON(QJsonObject &jsonObject);
 
-    this->setItemDelegateForColumn(6, colorDelegate.get());
+    void clear(void);
 
-    this->setItemDelegateForColumn(4, esriTypeComboDelegate.get());
-    this->setItemDelegateForColumn(5, esriTypeComboDelegate.get());
+    bool copyFiles(QString &destName);
 
-    this->setSizePolicy(QSizePolicy::Expanding,QSizePolicy::Expanding);
-
-    this->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    this->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-
-    this->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    this->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-
-    this->horizontalHeader()->setSectionResizeMode(6,QHeaderView::ResizeToContents);
-}
+    bool recursiveCopy(const QString &sourcePath, const QString &destPath);
 
 
-void RendererTableView::setRenderer(Esri::ArcGISRuntime::ClassBreaksRenderer* renderer)
-{
-    dataModel->setRenderer(renderer);
-    esriTypeComboDelegate->setRenderer(renderer);
+    SC_ResultsWidget* getResultsWidget(QWidget* parent = nullptr);
 
-    int width = this->verticalHeader()->width();
-    for(int column = 0; column < dataModel->columnCount(); ++column)
-        width = width + this->columnWidth(column);
+    QMainWindow* getPostProcessor(void);
+public slots:
 
-    int height = this->horizontalHeader()->height();
-    for(int row = 0; row < dataModel->rowCount(); ++row)
-        height += this->rowHeight(row);
+    void handleComboBoxChanged(const QString &text);
+    void handleBrowseButton1Pressed(void);
+    void handleBrowseButton2Pressed(void);
 
-    this->setMinimumWidth(600);
-    this->setMinimumHeight(height);
-}
+private:
+    QWidget* autoPopulateScriptWidget;
+    QWidget* fragDirWidget;
+    Pelicun3PostProcessor* resultWidget;
+
+    QComboBox* DLTypeComboBox;
+    QLineEdit* realizationsLineEdit;
+    QComboBox* eventTimeComboBox;
+    QCheckBox* detailedResultsCheckBox;
+    QCheckBox* logFileCheckBox;
+    QCheckBox* coupledEDPCheckBox;
+    QCheckBox* groundFailureCheckBox;
+    QLineEdit* autoPopulationScriptLineEdit;
+    QLineEdit* fragilityDirLineEdit;
+    void clearParams(void);
+};
+
+#endif // Pelicun3DLWidget_H

@@ -63,14 +63,8 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 #include <QJsonObject>
 #include <QHeaderView>
 
-#ifdef ARC_GIS
-#include "ArcGISVisualizationWidget.h"
-#include <FeatureCollectionLayer.h>
-#endif
-
-#ifdef Q_GIS
 #include "QGISVisualizationWidget.h"
-#endif
+
 
 // Std library headers
 #include <string>
@@ -78,15 +72,6 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 AssetInputWidget::AssetInputWidget(QWidget *parent, VisualizationWidget* visWidget, QString assetType, QString appType) : SimCenterAppWidget(parent), appType(appType), assetType(assetType)
 {
-#ifdef ARC_GIS
-    theVisualizationWidget = static_cast<ArcGISVisualizationWidget*>(visWidget);
-
-    if(theVisualizationWidget == nullptr)
-    {
-        this->errorMessage("Failed to cast to QISVisualizationWidget");
-        return;
-    }
-#endif
 
     offset = 0;
 
@@ -105,9 +90,11 @@ AssetInputWidget::AssetInputWidget(QWidget *parent, VisualizationWidget* visWidg
 
     auto txt3 = QStringRef(&assetType, 0, assetType.length()-1) + " Information";
 
+#ifdef OpenSRA
     label1->setText(txt1);
     label2->setText(txt2);
     label3->setText(txt3);
+#endif
 
     theComponentDb = ComponentDatabaseManager::getInstance()->createAssetDb(assetType);
 
@@ -122,7 +109,7 @@ AssetInputWidget::~AssetInputWidget()
 }
 
 
-bool AssetInputWidget::loadAssetData(void)
+bool AssetInputWidget::loadAssetData(bool message)
 {
     // Ask for the file path if the file path has not yet been set, and return if it is still null
     if(pathToComponentInputFile.compare("NULL") == 0)
@@ -153,7 +140,7 @@ bool AssetInputWidget::loadAssetData(void)
     
     // Test to remove
     // auto start = high_resolution_clock::now();
-    
+
     CSVReaderWriter csvTool;
     
     QString err;
@@ -204,8 +191,11 @@ bool AssetInputWidget::loadAssetData(void)
     }
     
     componentTableWidget->getTableModel()->populateData(data, tableHorizontalHeadings);
-    
+
+#ifdef OpenSRA
     label3->show();
+#endif
+    
     componentTableWidget->show();
     componentTableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
 
@@ -215,7 +205,8 @@ bool AssetInputWidget::loadAssetData(void)
 
     if(selectedFeaturesLayer != nullptr)
         theVisualizationWidget->removeLayer(selectedFeaturesLayer);
-    
+
+
     auto res = this->loadAssetVisualization();
 
     if(res != 0)
@@ -283,6 +274,8 @@ ComponentTableView *AssetInputWidget::getTableWidget() const
 
 void AssetInputWidget::createComponentsBox(void)
 {
+  
+#ifdef OpenSRA 
     componentGroupBox = new QGroupBox(assetType);
     componentGroupBox->setFlat(true);
     componentGroupBox->setContentsMargins(0,0,0,0);
@@ -297,12 +290,12 @@ void AssetInputWidget::createComponentsBox(void)
     label1 = new QLabel();
     
     QLabel* pathText = new QLabel();
-    pathText->setText("Path to file:");
+    pathText->setText("Assets to Analyze:");
     
     componentFileLineEdit = new QLineEdit();
-    //    componentFileLineEdit->setMaximumWidth(750);
-    componentFileLineEdit->setMinimumWidth(400);
-    componentFileLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+    // componentFileLineEdit->setMaximumWidth(750);
+    // componentFileLineEdit->setMinimumWidth(400);
+    // componentFileLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 
 
     browseFileButton = new QPushButton();
@@ -341,7 +334,7 @@ void AssetInputWidget::createComponentsBox(void)
     
     connect(componentTableWidget->getTableModel(), &ComponentTableModel::handleCellChanged, this, &AssetInputWidget::handleCellChanged);
     
-    QHBoxLayout* pathLayout = new QHBoxLayout();
+    pathLayout = new QHBoxLayout();
     pathLayout->addWidget(pathText);
     pathLayout->addWidget(componentFileLineEdit);
     pathLayout->addWidget(browseFileButton);
@@ -357,28 +350,123 @@ void AssetInputWidget::createComponentsBox(void)
     selectComponentsLayout->addWidget(filterExpressionButton);
     selectComponentsLayout->addWidget(clearSelectionButton);
 
-#ifdef OpenSRA
     // hide selection part
     selectComponentsLineEdit->setText("1");
     selectComponentsLineEdit->hide();
     clearSelectionButton->hide();
     filterExpressionButton->hide();
-#else
-    mainWidgetLayout->addWidget(filterWidget);
-#endif
 
     mainWidgetLayout->addWidget(label3,0,Qt::AlignCenter);
     mainWidgetLayout->addWidget(componentTableWidget,0,Qt::AlignCenter);
     
     mainWidgetLayout->addStretch();
 
-    this->setLayout(mainWidgetLayout);
+#else // using GridLayout
+    
+    componentGroupBox = new QGroupBox(assetType);
+    componentGroupBox->setFlat(true);
+    componentGroupBox->setContentsMargins(0,0,0,0);
+    
+    mainWidgetLayout = new QGridLayout();
+    
+    // mainWidgetLayout->setMargin(0);
+    // mainWidgetLayout->setSpacing(5);
+    // mainWidgetLayout->setContentsMargins(10,0,0,0);
+    
+    componentGroupBox->setLayout(mainWidgetLayout);
+    
+    label1 = new QLabel();
+    label1->setText("Asset File:");
+    
+    // QLabel* pathText = new QLabel();
+    // pathText->setText("Path to file:");
+    
+    componentFileLineEdit = new QLineEdit();
+    // componentFileLineEdit->setMaximumWidth(750);
+    // componentFileLineEdit->setMinimumWidth(400);
+    // componentFileLineEdit->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
+
+
+    browseFileButton = new QPushButton("Browse");
+    //    browseFileButton->setText(tr("Browse"));
+    browseFileButton->setMaximumWidth(150);
+    
+    connect(browseFileButton,SIGNAL(clicked()),this,SLOT(chooseComponentInfoFileDialog()));
+    
+    // Add a horizontal spacer after the browse and load buttons
+    //    auto hspacer = new QSpacerItem(0,0,QSizePolicy::Expanding, QSizePolicy::Minimum);
+    
+    label2 = new QLabel();
+    label2->setText("Assets to Analyze:");
+    selectComponentsLineEdit = new AssetInputDelegate();
+    connect(selectComponentsLineEdit,&AssetInputDelegate::componentSelectionComplete,this,&AssetInputWidget::handleComponentSelection);
+    connect(selectComponentsLineEdit,&QLineEdit::editingFinished,this,&AssetInputWidget::selectComponents);
+    
+    QPushButton *clearSelectionButton = new QPushButton();
+    clearSelectionButton->setText(tr("Clear Selection"));
+    clearSelectionButton->setMaximumWidth(150);
+    
+    connect(clearSelectionButton,SIGNAL(clicked()),this,SLOT(clearComponentSelection()));
+
+    QPushButton *filterExpressionButton = new QPushButton();
+    filterExpressionButton->setText(tr("Advanced Filter"));
+    filterExpressionButton->setMaximumWidth(150);
+    connect(filterExpressionButton,SIGNAL(clicked()),this,SLOT(handleComponentFilter()));
+    
+    // Text label for Component information
+    label3 = new QLabel();
+    label3->setStyleSheet("font-weight: bold; color: black");
+    label3->hide();
+    
+    // Create the table that will show the Component information
+    componentTableWidget = new ComponentTableView();
+    
+    connect(componentTableWidget->getTableModel(), &ComponentTableModel::handleCellChanged, this, &AssetInputWidget::handleCellChanged);
+
+    mainWidgetLayout->addWidget(label1, 1,0);
+    mainWidgetLayout->addWidget(componentFileLineEdit, 1,1);
+    mainWidgetLayout->addWidget(browseFileButton, 1,2);    
+    
+    //pathLayout = new QHBoxLayout();
+    //pathLayout->addWidget(pathText);
+    //pathLayout->addWidget(componentFileLineEdit);
+    //pathLayout->addWidget(browseFileButton);
+    
+    // Add a vertical spacer at the bottom to push everything up
+    // mainWidgetLayout->addWidget(label1);
+    //    mainWidgetLayout->addLayout(pathLayout);
+
+    //    filterWidget = new QWidget();
+    //QHBoxLayout* selectComponentsLayout = new QHBoxLayout(filterWidget);
+    //selectComponentsLayout->addWidget(label2);
+    // selectComponentsLayout->addWidget(selectComponentsLineEdit);
+    // selectComponentsLayout->addWidget(filterExpressionButton);
+    //selectComponentsLayout->addWidget(clearSelectionButton);
+    mainWidgetLayout->addWidget(label2, 2,0);
+    mainWidgetLayout->addWidget(selectComponentsLineEdit, 2,1);
+    mainWidgetLayout->addWidget(filterExpressionButton, 2,2);
+    mainWidgetLayout->addWidget(clearSelectionButton, 2,3);
+    // mainWidgetLayout->addWidget(label3,0,Qt::AlignCenter);
+    
+    mainWidgetLayout->addWidget(componentTableWidget,3, 0, 1,4);
+    mainWidgetLayout->setRowStretch(4,1);
+    
+    //    mainWidgetLayout->addStretch();
+
+#endif
+
+    this->setLayout(mainWidgetLayout);    
 }
 
 
 QgsVectorLayer *AssetInputWidget::getMainLayer() const
 {
     return mainLayer;
+}
+
+QgsVectorLayer *AssetInputWidget::getSelectedLayer() const
+{
+    return selectedFeaturesLayer;
 }
 
 
@@ -395,128 +483,6 @@ void AssetInputWidget::selectComponents(void)
 }
 
 
-#ifdef ARC_GIS
-void AssetInputWidget::handleComponentSelection(void)
-{
-    
-    auto nRows = componentTableWidget->rowCount();
-    
-    if(nRows == 0)
-        return;
-    
-    // Get the ID of the first and last component
-    bool OK;
-    auto firstID = componentTableWidget->item(0,0).toInt(&OK);
-    
-    if(!OK)
-    {
-        QString msg = "Error in getting the component ID in " + QString(__FUNCTION__);
-        this->errorMessage(msg);
-        return;
-    }
-    
-    auto lastID = componentTableWidget->item(nRows-1,0).toInt(&OK);
-    
-    if(!OK)
-    {
-        QString msg = "Error in getting the component ID in " + QString(__FUNCTION__);
-        this->errorMessage(msg);
-        return;
-    }
-    
-    auto selectedComponentIDs = selectComponentsLineEdit->getSelectedComponentIDs();
-    
-    // First check that all of the selected IDs are within range
-    for(auto&& it : selectedComponentIDs)
-    {
-        if(it<firstID || it>lastID)
-        {
-            QString msg = "The component ID " + QString::number(it) + " is out of range of the components provided";
-            this->errorMessage(msg);
-            selectComponentsLineEdit->clear();
-            return;
-        }
-    }
-    
-    // Hide all rows in the table
-    for(int i = 0; i<nRows; ++i)
-        componentTableWidget->setRowHidden(i,true);
-    
-    // Unhide the selected rows
-    for(auto&& it : selectedComponentIDs)
-        componentTableWidget->setRowHidden(it - firstID,false);
-    
-    auto numAssets = selectedComponentIDs.size();
-    QString msg = "A total of "+ QString::number(numAssets) + " " + componentType.toLower() + " are selected for analysis";
-    this->statusMessage(msg);
-    
-    for(auto&& it : selectedComponentIDs)
-    {
-        auto component = theComponentDb->getComponent(it);
-        
-        auto feature = component.ComponentFeature;
-        
-        if(feature == nullptr)
-            continue;
-        
-        QMap<QString, QVariant> featureAttributes;
-        auto atrb = feature->attributes()->attributesMap();
-        
-        auto id = atrb.value("UID").toString();
-        
-        if(selectedFeaturesForAnalysis.contains(id))
-            continue;
-        
-        auto atrVals = atrb.values();
-        auto atrKeys = atrb.keys();
-        
-        // qDebug()<<"Num atributes: "<<atrb.size();
-        
-        for(int i = 0; i<atrb.size();++i)
-        {
-            auto key = atrKeys.at(i);
-            auto val = atrVals.at(i);
-            
-            // Including the ObjectID causes a crash!!! Do not include it when creating an object
-            if(key == "ObjectID")
-                continue;
-            
-            // qDebug()<< nid<<"-key:"<<key<<"-value:"<<atrVals.at(i).toString();
-            
-            featureAttributes[key] = val;
-        }
-
-        
-        //        auto geom = feature->geometry();
-        
-        auto res = this->addFeatureToSelectedLayer(*feature);
-
-        if(res == false)
-            this->errorMessage("Error adding feature to selected feature layer");
-        else
-            selectedFeaturesForAnalysis.insert(id,feature);
-    }
-
-    auto selecFeatLayer = this->getSelectedFeatureLayer();
-
-    if(selecFeatLayer == nullptr)
-    {
-        QString err = "Error in getting the selected feature layer";
-        qDebug()<<err;
-        return;
-    }
-
-    // Add the layer to the map if it does not already exist
-    auto layerExists = theVisualizationWidget->getLayer(selecFeatLayer->layerId());
-
-    if(layerExists == nullptr)
-        theVisualizationWidget->addSelectedFeatureLayerToMap(selecFeatLayer);
-
-}
-#endif
-
-
-#ifdef Q_GIS
 void AssetInputWidget::handleComponentSelection(void)
 {
 
@@ -594,7 +560,6 @@ void AssetInputWidget::handleComponentSelection(void)
 
 
 }
-#endif
 
 
 
@@ -624,19 +589,25 @@ void AssetInputWidget::clearComponentSelection(void)
 
 void AssetInputWidget::setLabel1(const QString &value)
 {
-    label1->setText(value);
+#ifdef OpenSRA
+  label1->setText(value);
+#endif
 }
 
 
 void AssetInputWidget::setLabel2(const QString &value)
 {
-    label2->setText(value);
+#ifdef OpenSRA  
+  label2->setText(value);
+#endif  
 }
 
 
 void AssetInputWidget::setLabel3(const QString &value)
 {
-    label3->setText(value);
+#ifdef OpenSRA    
+  label3->setText(value);
+#endif  
 }
 
 
@@ -759,7 +730,8 @@ bool AssetInputWidget::inputAppDataFromJSON(QJsonObject &jsonObject)
         }
     }
 
-
+    
+    
     if (jsonObject.contains("ApplicationData")) {
         QJsonObject appData = jsonObject["ApplicationData"].toObject();
 
@@ -1022,72 +994,12 @@ void AssetInputWidget::handleCellChanged(const int row, const int col)
 
     auto attribVal = componentTableWidget->item(row,col);
 
-#ifdef ARC_GIS
-    auto uid = component.UID;
-    this->updateSelectedComponentAttribute(uid,attrib,attribVal);
-#endif
 
-#ifdef Q_GIS
     auto res = theComponentDb->updateComponentAttribute(ID,attrib,attribVal);
     if(res == false)
         this->errorMessage("Error could not update asset "+QString::number(ID)+" after cell change");
-#endif
 
 }
-
-#ifdef ARC_GIS
-Esri::ArcGISRuntime::Feature* AssetInputWidget::addFeatureToSelectedLayer(QMap<QString, QVariant>& /*featureAttributes*/, Esri::ArcGISRuntime::Geometry& /*geom*/)
-{
-    return nullptr;
-}
-
-
-int AssetInputWidget::removeFeatureFromSelectedLayer(Esri::ArcGISRuntime::Feature* /*feat*/)
-{
-    return -1;
-}
-
-
-Esri::ArcGISRuntime::FeatureCollectionLayer* AssetInputWidget::getSelectedFeatureLayer(void)
-{
-    return nullptr;
-}
-
-
-void AssetInputWidget::updateSelectedComponentAttribute(const QString&  uid, const QString& attribute, const QVariant& value)
-{
-
-    if(selectedFeaturesForAnalysis.empty())
-    {
-        this->statusMessage("Selected features map is empty, nothing to update");
-        return;
-    }
-
-    if(!selectedFeaturesForAnalysis.contains(id))
-    {
-        this->statusMessage("Feature not found in selected components map");
-        return;
-    }
-
-    // Get the feature
-    Esri::ArcGISRuntime::Feature* feat = selectedFeaturesForAnalysis[uid];
-
-    if(feat == nullptr)
-    {
-        qDebug()<<"Feature is a nullptr";
-        return;
-    }
-
-    feat->attributes()->replaceAttribute(attribute,value);
-    feat->featureTable()->updateFeature(feat);
-
-    if(feat->attributes()->attributeValue(attribute).isNull())
-    {
-        qDebug()<<"Failed to update feature "<<feat->attributes()->attributeValue("ID").toString();
-        return;
-    }
-}
-#endif
 
 
 void AssetInputWidget::insertSelectedAssets(QgsFeatureIds& featureIds)
@@ -1138,6 +1050,30 @@ void AssetInputWidget::handleComponentFilter(void)
 }
 
 
+void AssetInputWidget::setPathToComponentInputFile(const QString &newPathToComponentInputFile)
+{
+    pathToComponentInputFile = newPathToComponentInputFile;
+}
+
+
+QLabel *AssetInputWidget::getLabel1() const
+{
+    return label1;
+}
+
+
+QHBoxLayout *AssetInputWidget::getAssetFilePathLayout() const
+{
+    return pathLayout;
+}
+
+
+QString AssetInputWidget::getAssetType() const
+{
+    return assetType;
+}
+
+
 int AssetInputWidget::applyFilterString(const QString& filter)
 {
     QVector<int> filterIds;
@@ -1179,3 +1115,22 @@ void AssetInputWidget::setFilterVisibility(const bool value)
     filterWidget->setVisible(value);
 }
 
+void AssetInputWidget::hideCRS_Selection() const
+{
+    int rowAssetPath = 0; // I don't like this .. crs row should be defined and hidden .. the inut takes a layout
+    for (int i=0; i<mainWidgetLayout->columnCount(); i++) {
+        QLayoutItem *item = mainWidgetLayout->itemAtPosition(rowAssetPath,i);
+        if (item != nullptr)
+            item->widget()->hide();
+    }
+}
+
+void AssetInputWidget::hideAssetFilePath() const
+{
+    int rowAssetPath = 1; // again i don't like this solution
+    for (int i=0; i<mainWidgetLayout->columnCount(); i++) {
+        QLayoutItem *item = mainWidgetLayout->itemAtPosition(rowAssetPath,i);
+        if (item != nullptr)
+            item->widget()->hide();
+    }
+}

@@ -1,5 +1,5 @@
-#ifndef RendererComboBoxItemDelegate_H
-#define RendererComboBoxItemDelegate_H
+#ifndef GISTransportNetworkInputWidget_H
+#define GISTransportNetworkInputWidget_H
 /* *****************************************************************************
 Copyright (c) 2016-2021, The Regents of the University of California (Regents).
 All rights reserved.
@@ -19,7 +19,7 @@ WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
 ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
@@ -36,37 +36,72 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 *************************************************************************** */
 
-// Written by: Stevan Gavrilovic
+// Written by: Dr. Stevan Gavrilovic
 
-#include <QStyledItemDelegate>
+#include "SimCenterAppWidget.h"
+#include <QLineEdit>
+#include <QLabel>
+#include <QLabel>
+#include <QMessageBox>
+#include <QLineEdit>
+#include <QLabel>
+#include <QLabel>
+#include <QMessageBox>
+#include <qgsjsonutils.h>
+#include <QJsonArray>
+#include <qgscoordinatereferencesystem.h>
+#include <qgsproject.h>
+#include <qgscoordinatetransform.h>
 
-namespace Esri
-{
-namespace ArcGISRuntime
-{
-class ClassBreaksRenderer;
-}
-}
+class QGISVisualizationWidget;
+class VisualizationWidget;
+class GISAssetInputWidget;
 
-class RendererComboBoxItemDelegate : public QStyledItemDelegate
+class QgsVectorLayer;
+class QgsFeature;
+class QgsGeometry;
+
+class GISTransportNetworkInputWidget : public SimCenterAppWidget
 {
+    Q_OBJECT
+
 public:
-    RendererComboBoxItemDelegate(QObject *parent = nullptr);
+    GISTransportNetworkInputWidget(QWidget *parent, VisualizationWidget* visWidget);
+    virtual ~GISTransportNetworkInputWidget();
 
-    QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+    virtual int loadBridgesVisualization();
+    virtual int loadRoadwaysVisualization();
+    virtual int loadTunnelsVisualization();
 
-    void setEditorData(QWidget *editor, const QModelIndex &index) const override;
+    void clear();
 
-    void setModelData(QWidget *editor, QAbstractItemModel *model, const QModelIndex &index) const override;
+    bool outputAppDataToJSON(QJsonObject &jsonObject);
+    bool inputAppDataFromJSON(QJsonObject &jsonObject);
+    bool copyFiles(QString &destName);
 
-    void updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+protected slots:
+    void handleAssetsLoaded();
+    void printRoadLengthInput(void);
 
-    void setRenderer(Esri::ArcGISRuntime::ClassBreaksRenderer *renderer);
+protected:
 
+    QGISVisualizationWidget* theVisualizationWidget = nullptr;
+
+    GISAssetInputWidget* theBridgesWidget = nullptr;
+    GISAssetInputWidget* theTunnelsWidget = nullptr;
+    GISAssetInputWidget* theRoadwaysWidget = nullptr;
+
+
+    QgsVectorLayer* bridgesMainLayer = nullptr;
+    QgsVectorLayer* roadwaysMainLayer = nullptr;
+    QgsVectorLayer* tunnelsMainLayer = nullptr;
+
+    void exportLayerToGeoJSON(QgsVectorLayer* layer, QJsonArray& featArray,QString assetType);
 private:
-
-    Esri::ArcGISRuntime::ClassBreaksRenderer* m_renderer = nullptr;
+//    QLineEdit *roadLengthLineEdit;
+//    QWidget* roadLengthWidget = nullptr;
+    QString destFolder = "";
 
 };
 
-#endif // RendererComboBoxItemDelegate_H
+#endif // GISTransportNetworkInputWidget_H

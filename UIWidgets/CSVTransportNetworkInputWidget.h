@@ -1,5 +1,5 @@
-﻿#ifndef SimCenter_MAP_GRAPHICS_VIEW_H
-#define SimCenter_MAP_GRAPHICS_VIEW_H
+#ifndef CSVTransportNetworkInputWidget_H
+#define CSVTransportNetworkInputWidget_H
 /* *****************************************************************************
 Copyright (c) 2016-2021, The Regents of the University of California (Regents).
 All rights reserved.
@@ -36,34 +36,54 @@ UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 
 *************************************************************************** */
 
-// Written by: Frank McKenna, Stevan Gavrilovic
+// Written by: Stevan Gavrilovic
 
-#include "MapGraphicsView.h"
+#include "AssetInputWidget.h"
 
-#include <QVBoxLayout>
+class NonselectableAssetInputWidget;
+class LineAssetInputWidget;
+class PointAssetInputWidget;
 
-class GISLegendView;
+class QgsVectorLayer;
+class QgsFeature;
+class QgsGeometry;
 
-class SimCenterMapGraphicsView: public  Esri::ArcGISRuntime::MapGraphicsView
+class CSVTransportNetworkInputWidget : public SimCenterAppWidget
 {
     Q_OBJECT
 
 public:
-    static SimCenterMapGraphicsView *getInstance();
-    ~SimCenterMapGraphicsView();
+    CSVTransportNetworkInputWidget(QWidget *parent, VisualizationWidget* visWidget);
+    virtual ~CSVTransportNetworkInputWidget();
 
-    void setCurrentLayout(QLayout *layout);
+    int getNodeMap();
+    virtual int loadPipelinesVisualization();
 
-    GISLegendView *getLegendView() const;
+    void clear();
 
-private:
-    SimCenterMapGraphicsView(QObject *obj);
+    bool outputAppDataToJSON(QJsonObject &jsonObject);
+    bool inputAppDataFromJSON(QJsonObject &jsonObject);
+    bool copyFiles(QString &destName);
 
-    QVBoxLayout *theCurrentLayout;
-    static SimCenterMapGraphicsView *theInstance;
+protected slots:
+    void handleAssetsLoaded();
 
-    GISLegendView* legendView;
+protected:
+    QGISVisualizationWidget* theVisualizationWidget = nullptr;
+
+    ComponentDatabase*  theNodesDb = nullptr;
+    ComponentDatabase*  theLinksDb = nullptr;
+
+    PointAssetInputWidget* theNodesWidget = nullptr;
+    LineAssetInputWidget* theLinksWidget = nullptr;
+
+    QgsVectorLayer* transportNetworkMainLayer = nullptr;
+    QgsVectorLayer* transportNetworkSelectedLayer = nullptr;
+
+
+    // ID, QgsGeometry
+    QMap<int, QgsPointXY> nodePointsMap;
 
 };
 
-#endif // SimCenter_MAP_GRAPHICS_VIEW_H
+#endif // CSVTransportNetworkInputWidget_H
